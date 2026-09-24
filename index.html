@@ -62,6 +62,13 @@ h2{font:700 1.35rem/1.2 var(--display);margin:0 0 4px;letter-spacing:-.01em}
 .qlabels span small{display:block;font-weight:400;color:var(--muted)}
 
 .move{margin-top:52px}
+.cal{margin:36px 0 0;padding:16px 0 0;border-top:1px solid var(--line)}
+.cal h2{margin:0 0 4px}
+.cal-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:12px}
+.cal-grid div{border-left:4px solid var(--accent);padding:2px 0 2px 12px}
+.cal-grid b{display:block;font-size:1rem}
+.cal-grid span{display:block;color:var(--muted);font-size:.9rem}
+.cal-grid em{display:block;color:var(--muted);font-size:.85rem;font-style:normal}
 .grid-table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
 .grid-table caption{text-align:left}
 .grid-table th,.grid-table td{padding:12px 10px;border-bottom:1px solid var(--line);text-align:right}
@@ -103,6 +110,7 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--line);color:v
   .hero,.metric,.split{grid-template-columns:1fr}
   .bars{height:200px}
   .split{gap:28px}
+  .cal-grid{grid-template-columns:1fr 1fr}
 }
 @media print{
   :root{--bg:#fff;--surface:#fff}
@@ -120,6 +128,7 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--line);color:v
     <div>
       <h1>Outputs and Outcomes</h1>
       <p>Girls Inc. of Columbus &amp; Phenix-Russell. Data as of <span id="asof"></span>.</p>
+      <p>Reporting period: July 1, 2026 &ndash; June 30, 2027 (fiscal year, July&ndash;June).</p>
     </div>
     <nav class="tabs" role="tablist" aria-label="Report pages">
       <button role="tab" id="t-clients" aria-selected="true" aria-controls="p-clients">Clients Served</button>
@@ -134,7 +143,7 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--line);color:v
 </div>
 
 <script>
-const DATA = {"overview": {"CLIENTS": {"Q1": 287.0, "Q2": 0.0, "Q3": 0.0, "Q4": 0.0, "Total": 287.0}, "NEW": {"Q2": 0.0, "Q3": 0.0, "Q4": 0.0, "Q1": 287.0}, "RETURNING": {"Q3": 0.0, "Q4": 0.0}, "RETAINED": {"Q1-Q2": 0.0, "Q2-Q3": 0.0, "Q3-Q4": 0.0}}, "youth": [{"code": "LIT_K3", "name": "K-3 literacy", "served_label": "Children (K-3) in literacy supports", "success_label": "Reading at or above grade level", "q": {"Q1": [45.0, 28.0, 62.22], "Q2": [0.0, 0.0, null], "Q3": [0.0, 0.0, null], "Q4": [0.0, 0.0, null], "Total": [45.0, 28.0, 62.22]}}, {"code": "LIT_ALL", "name": "Literacy, all grades", "served_label": "Children (all grades) in literacy supports", "success_label": "Reading at or above grade level", "q": {"Q1": [65.0, 38.0, 58.46], "Q2": [0.0, 0.0, null], "Q3": [0.0, 0.0, null], "Q4": [0.0, 0.0, null], "Total": [65.0, 38.0, 58.46]}}, {"code": "ATTEND", "name": "School attendance", "served_label": "Children and youth in programming to improve school attendance", "success_label": "Maintained satisfactory attendance or improved it", "q": {"Q1": [0.0, 0.0, null], "Q2": [0.0, 0.0, null], "Q3": [0.0, 0.0, null], "Q4": [0.0, 0.0, null], "Total": [0.0, 0.0, null]}}, {"code": "ACADEMIC", "name": "Academic performance", "served_label": "Youth in programming designed to improve academic performance", "success_label": "Youth with improved academic performance", "q": {"Q1": [180.0, 0.0, 0.0], "Q2": [0.0, 0.0, null], "Q3": [0.0, 0.0, null], "Q4": [0.0, 0.0, null], "Total": [180.0, 0.0, 0.0]}}, {"code": "MIDDLE_TRANSITION", "name": "Middle to high school transition", "served_label": "Middle school youth in programming to transition to high school on time", "success_label": "Transitioned to high school on time", "q": {"Q1": [9.0, 0.0, 0.0], "Q2": [0.0, 0.0, null], "Q3": [0.0, 0.0, null], "Q4": [0.0, 0.0, null], "Total": [9.0, 0.0, 0.0]}}, {"code": "CCR", "name": "College and career readiness", "served_label": "Youth in programming for increased college and career readiness", "success_label": "Youth demonstrating increased readiness", "q": {"Q1": [86.0, 0.0, 0.0], "Q2": [0.0, 0.0, null], "Q3": [0.0, 0.0, null], "Q4": [0.0, 0.0, null], "Total": [86.0, 0.0, 0.0]}}, {"code": "KINDERGARTEN", "name": "Kindergarten readiness", "served_label": "Children in kindergarten and school readiness programs", "success_label": "Proficient on school readiness assessments by the end of kindergarten", "q": {"Q1": [0.0, 0.0, null], "Q2": [0.0, 0.0, null], "Q3": [0.0, 0.0, null], "Q4": [0.0, 0.0, null], "Total": [0.0, 0.0, null]}}, {"code": "WORKFORCE", "name": "Workforce readiness", "served_label": "Youth in programming to increase workforce readiness and job skills", "success_label": "Youth demonstrating increased workforce readiness", "q": {"Q1": [36.0, 0.0, 0.0], "Q2": [0.0, 0.0, null], "Q3": [0.0, 0.0, null], "Q4": [0.0, 0.0, null], "Total": [36.0, 0.0, 0.0]}}, {"code": "POST_SECONDARY", "name": "Post-secondary planning", "served_label": "Youth in programming for post-secondary planning", "success_label": "Youth graduating with a documented post-secondary plan", "q": {"Q1": [1.0, 0.0, 0.0], "Q2": [0.0, 0.0, null], "Q3": [0.0, 0.0, null], "Q4": [0.0, 0.0, null], "Total": [1.0, 0.0, 0.0]}}], "asof": "September 24, 2026"};
+const DATA = {"overview": {"CLIENTS": {"Q1": 287.0, "Q2": 0.0, "Q3": 0.0, "Q4": 0.0, "Total": 287.0}, "NEW": {"Q2": 0.0, "Q3": 0.0, "Q4": 0.0, "Q1": 287.0}, "EXITED": {"Q2": 287.0, "Q3": 0.0, "Q4": 0.0}, "RETURNING": {"Q3": 0.0, "Q4": 0.0}, "RETAINED": {"Q1-Q2": 0.0, "Q2-Q3": 0.0, "Q3-Q4": 0.0}}, "youth": [{"code": "LIT_K3", "name": "K-3 literacy", "served_label": "Children (K-3) in literacy supports", "success_label": "Reading at or above grade level", "q": {"Q1": [45.0, 28.0, 62.22], "Q2": [0.0, 0.0, null], "Q3": [0.0, 0.0, null], "Q4": [0.0, 0.0, null], "Total": [45.0, 28.0, 62.22]}}, {"code": "LIT_ALL", "name": "Literacy, all grades", "served_label": "Children (all grades) in literacy supports", "success_label": "Reading at or above grade level", "q": {"Q1": [65.0, 38.0, 58.46], "Q2": [0.0, 0.0, null], "Q3": [0.0, 0.0, null], "Q4": [0.0, 0.0, null], "Total": [65.0, 38.0, 58.46]}}, {"code": "ATTEND", "name": "School attendance", "served_label": "Children and youth in programming to improve school attendance", "success_label": "Maintained satisfactory attendance or improved it", "q": {"Q1": [0.0, 0.0, null], "Q2": [0.0, 0.0, null], "Q3": [0.0, 0.0, null], "Q4": [0.0, 0.0, null], "Total": [0.0, 0.0, null]}}, {"code": "ACADEMIC", "name": "Academic performance", "served_label": "Youth in programming designed to improve academic performance", "success_label": "Youth with improved academic performance", "q": {"Q1": [180.0, 0.0, 0.0], "Q2": [0.0, 0.0, null], "Q3": [0.0, 0.0, null], "Q4": [0.0, 0.0, null], "Total": [180.0, 0.0, 0.0]}}, {"code": "MIDDLE_TRANSITION", "name": "Middle to high school transition", "served_label": "Middle school youth in programming to transition to high school on time", "success_label": "Transitioned to high school on time", "q": {"Q1": [9.0, 0.0, 0.0], "Q2": [0.0, 0.0, null], "Q3": [0.0, 0.0, null], "Q4": [0.0, 0.0, null], "Total": [9.0, 0.0, 0.0]}}, {"code": "CCR", "name": "College and career readiness", "served_label": "Youth in programming for increased college and career readiness", "success_label": "Youth demonstrating increased readiness", "q": {"Q1": [86.0, 0.0, 0.0], "Q2": [0.0, 0.0, null], "Q3": [0.0, 0.0, null], "Q4": [0.0, 0.0, null], "Total": [86.0, 0.0, 0.0]}}, {"code": "KINDERGARTEN", "name": "Kindergarten readiness", "served_label": "Children in kindergarten and school readiness programs", "success_label": "Proficient on school readiness assessments by the end of kindergarten", "q": {"Q1": [0.0, 0.0, null], "Q2": [0.0, 0.0, null], "Q3": [0.0, 0.0, null], "Q4": [0.0, 0.0, null], "Total": [0.0, 0.0, null]}}, {"code": "WORKFORCE", "name": "Workforce readiness", "served_label": "Youth in programming to increase workforce readiness and job skills", "success_label": "Youth demonstrating increased workforce readiness", "q": {"Q1": [36.0, 0.0, 0.0], "Q2": [0.0, 0.0, null], "Q3": [0.0, 0.0, null], "Q4": [0.0, 0.0, null], "Total": [36.0, 0.0, 0.0]}}, {"code": "POST_SECONDARY", "name": "Post-secondary planning", "served_label": "Youth in programming for post-secondary planning", "success_label": "Youth graduating with a documented post-secondary plan", "q": {"Q1": [1.0, 0.0, 0.0], "Q2": [0.0, 0.0, null], "Q3": [0.0, 0.0, null], "Q4": [0.0, 0.0, null], "Total": [1.0, 0.0, 0.0]}}], "asof": "September 24, 2026"};
 const fmt = n => (n===null||n===undefined) ? 'n/a' : Number(n).toLocaleString('en-US');
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 document.getElementById('asof').textContent = DATA.asof;
@@ -148,7 +157,9 @@ document.getElementById('asof').textContent = DATA.asof;
     const v = vals[i], h = Math.round((v/max)*190);
     return `<div class="bar ${v? '' : 'empty'}"><span class="v">${fmt(v)}</span><div class="fill" style="height:${v? h : 4}px"></div></div>`;
   }).join('');
-  const labels = Q.map(q=>`<span>${q}</span>`).join('');
+  const QD = {Q1:['Jul 1 – Sep 30, 2026','Jul – Sep'], Q2:['Oct 1 – Dec 31, 2026','Oct – Dec'], Q3:['Jan 1 – Mar 31, 2027','Jan – Mar'], Q4:['Apr 1 – Jun 30, 2027','Apr – Jun']};
+  const labels = Q.map(q=>`<span>${q}<small>${QD[q][1]}</small></span>`).join('');
+  const cal = Q.map(q=>`<div><b>${q}</b><span>${QD[q][0]}</span></div>`).join('');
   const row = (label, src, cols, span) => `<tr><th scope="row" style="font-weight:500">${label}</th>${cols.map(c=>{
       const v = src ? src[c] : undefined;
       if (v===undefined || v===null) return `<td class="na">n/a</td>`;
@@ -161,6 +172,7 @@ document.getElementById('asof').textContent = DATA.asof;
         <p class="big">${fmt(o.CLIENTS.Total)}</p>
         <p class="big-label">Clients served</p>
         <p class="big-note">Year to date, all quarters</p>
+        <p class="big-note">Program year July 1, 2026 &ndash; June 30, 2027</p>
       </div>
       <div>
         <div class="bars" role="img" aria-label="Clients served by quarter: ${Q.map((q,i)=>q+' '+vals[i]).join(', ')}">${bars}</div>
@@ -170,13 +182,14 @@ document.getElementById('asof').textContent = DATA.asof;
 
     <div class="move">
       <h2>Movement between quarters</h2>
-      <p class="sub">How many clients are new, coming back, or staying with us from one quarter to the next.</p>
+      <p class="sub">How many clients are new, exiting the program, coming back, or staying with us from one quarter to the next. Exit tracking begins in Q2.</p>
       <div class="split">
         <div class="table-scroll">
           <table class="grid-table">
-            <thead><tr><th scope="col">Clients in the quarter</th><th scope="col">Q1</th><th scope="col">Q2</th><th scope="col">Q3</th><th scope="col">Q4</th></tr></thead>
+            <thead><tr><th scope="col">Client movement</th><th scope="col">Q1</th><th scope="col">Q2</th><th scope="col">Q3</th><th scope="col">Q4</th></tr></thead>
             <tbody>
               ${row('New clients', o.NEW, ['Q1','Q2','Q3','Q4'])}
+              ${row('Clients exited', o.EXITED, ['Q1','Q2','Q3','Q4'])}
               ${row('Returning clients', o.RETURNING, ['Q1','Q2','Q3','Q4'])}
             </tbody>
           </table>
@@ -190,6 +203,12 @@ document.getElementById('asof').textContent = DATA.asof;
           </table>
         </div>
       </div>
+    </div>
+
+    <div class="cal">
+      <h2>Reporting calendar</h2>
+      <p class="sub">This report covers the July&ndash;June fiscal year, July 1, 2026 through June 30, 2027 (FY 2026&ndash;27).</p>
+      <div class="cal-grid">${cal}</div>
     </div>`;
 })();
 
