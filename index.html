@@ -158,6 +158,11 @@ document.getElementById('asof').textContent = DATA.asof;
     return `<div class="bar ${v? '' : 'empty'}"><span class="v">${fmt(v)}</span><div class="fill" style="height:${v? h : 4}px"></div></div>`;
   }).join('');
   const QD = {Q1:['Jul 1 – Sep 30, 2026','Jul – Sep'], Q2:['Oct 1 – Dec 31, 2026','Oct – Dec'], Q3:['Jan 1 – Mar 31, 2027','Jan – Mar'], Q4:['Apr 1 – Jun 30, 2027','Apr – Jun']};
+  /* Exits for quarters that have not started yet (relative to the data date) show as 0 */
+  const QSTART = {Q1:'2026-07-01', Q2:'2026-10-01', Q3:'2027-01-01', Q4:'2027-04-01'};
+  const asofDate = new Date(DATA.asof);
+  const exited = {};
+  ['Q2','Q3','Q4'].forEach(q => { exited[q] = new Date(QSTART[q]+'T00:00:00') > asofDate ? 0 : (o.EXITED||{})[q]; });
   const labels = Q.map(q=>`<span>${q}<small>${QD[q][1]}</small></span>`).join('');
   const cal = Q.map(q=>`<div><b>${q}</b><span>${QD[q][0]}</span></div>`).join('');
   const row = (label, src, cols, span) => `<tr><th scope="row" style="font-weight:500">${label}</th>${cols.map(c=>{
@@ -189,7 +194,7 @@ document.getElementById('asof').textContent = DATA.asof;
             <thead><tr><th scope="col">Client movement</th><th scope="col">Q1</th><th scope="col">Q2</th><th scope="col">Q3</th><th scope="col">Q4</th></tr></thead>
             <tbody>
               ${row('New clients', o.NEW, ['Q1','Q2','Q3','Q4'])}
-              ${row('Clients exited', o.EXITED, ['Q1','Q2','Q3','Q4'])}
+              ${row('Clients exited', exited, ['Q1','Q2','Q3','Q4'])}
               ${row('Returning clients', o.RETURNING, ['Q1','Q2','Q3','Q4'])}
             </tbody>
           </table>
