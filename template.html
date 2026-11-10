@@ -132,12 +132,11 @@ table.count tr.unk td{color:var(--muted)}
 .chips button{font:600 .85rem var(--body);border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 14px;cursor:pointer}
 .chips button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .map-note{color:var(--muted);font-size:.85rem;margin:0 0 14px}
-.zipgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:10px;margin-bottom:8px}
-.zipcell{border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;text-align:left;font:inherit;color:var(--ink)}
-.zipcell b{display:block;font:700 1.15rem var(--display)}
-.zipcell span{display:block;font-size:.78rem;opacity:.85;margin-top:2px}
-.zipcell[aria-pressed="true"]{outline:3px solid var(--accent);outline-offset:1px}
-.legend{display:flex;align-items:center;gap:8px;margin:10px 0 26px;font-size:.85rem;color:var(--muted)}
+.tractmap{width:100%;height:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.tractmap path{stroke:var(--bg);stroke-width:1;cursor:pointer;transition:opacity .1s}
+.tractmap path:hover{opacity:.78}
+.tractmap path[aria-pressed="true"]{stroke:var(--ink);stroke-width:2.5}
+.legend{display:flex;align-items:center;gap:8px;margin:14px 0 26px;font-size:.85rem;color:var(--muted)}
 .legend .swatches{display:flex}
 .legend .swatches i{display:inline-block;width:22px;height:14px}
 .zip-detail{border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:30px}
@@ -363,18 +362,15 @@ document.getElementById('asof').textContent = DATA.asof;
 
 /* ---------- Service Map ---------- */
 (function(){
-  const D = DATA.demo, Z = D.map.zips, total = D.total;
+  const D = DATA.demo, T = D.map.tracts, B = D.map.boundaries || {}, total = D.total;
   const COUNTIES = Object.assign({GA:[],AL:[]}, D.map.counties || {});
-  let state = 'GA', activeCounties = new Set(COUNTIES.GA), openZip = null;
+  let state = Object.keys(COUNTIES).find(s => COUNTIES[s].length) || 'GA';
+  let activeCounties = new Set(COUNTIES[state]), openTract = null;
 
-  const zipsForState = () => Object.entries(Z)
-    .filter(([z,v]) => v.state===state && activeCounties.has(v.county))
-    .sort((a,b) => b[1].total - a[1].total || a[0].localeCompare(b[0]));
+  const boundariesForState = () => Object.entries(B)
+    .filter(([,v]) => v.state===state && activeCounties.has(v.county));
 
-  const shade = (n, max) => {
-    if (!max) return 0.12;
-    return 0.16 + (n/max) * 0.72; // 0.16 (lightest) .. 0.88 (darkest)
-  };
+  const shade = (n, max) => !max ? 0 : 0.18 + (n/max) * 0.72; // 0.18 (lightest) .. 0.9 (darkest)
 
   const gradeRows = grades => {
     const entries = Object.entries(grades).sort((a,b)=> GRADE_SORT(a[0])-GRADE_SORT(b[0]));
@@ -395,34 +391,61 @@ document.getElementById('asof').textContent = DATA.asof;
     return 999;
   }
 
+  // Simple equirectangular projection (longitude scaled by cos(latitude)) -- plenty
+  // accurate at county scale, with no mapping library or network tiles required.
+  function buildSvg(list, max, openId){
+    if (!list.length) return null;
+    let minLon=Infinity,maxLon=-Infinity,minLat=Infinity,maxLat=-Infinity;
+    list.forEach(([,v]) => v.rings.forEach(r => r.forEach(([lon,lat]) => {
+      if (lon<minLon) minLon=lon; if (lon>maxLon) maxLon=lon;
+      if (lat<minLat) minLat=lat; if (lat>maxLat) maxLat=lat;
+    })));
+    const cosLat = Math.cos((minLat+maxLat)/2 * Math.PI/180);
+    const W = 640, pad = 10;
+    const spanX = Math.max((maxLon-minLon)*cosLat, 1e-6), spanY = Math.max(maxLat-minLat, 1e-6);
+    const scale = (W - 2*pad) / spanX;
+    const H = Math.round(spanY*scale + 2*pad);
+    const xy = (lon,lat) => [(pad + (lon-minLon)*cosLat*scale).toFixed(1), (pad + (maxLat-lat)*scale).toFixed(1)];
+    const paths = list
+      .sort((a,b) => (T[a[0]]?.total||0) - (T[b[0]]?.total||0)) // draw busiest tracts last (on top)
+      .map(([id,v]) => {
+        const d = v.rings.map(ring => ring.map(([lon,lat],i) => {
+          const [x,y] = xy(lon,lat); return (i===0?'M':'L')+x+','+y;
+        }).join(' ') + ' Z').join(' ');
+        const n = T[id] ? T[id].total : 0;
+        const fill = n>0 ? `rgba(237,24,73,${shade(n,max).toFixed(2)})` : '#949CA1';
+        return `<path d="${d}" fill="${fill}" fill-rule="evenodd" data-tract="${id}" aria-pressed="${openId===id}"><title>Tract ${esc(v.tract)}: ${fmt(n)} served</title></path>`;
+      }).join('');
+    return `<svg class="tractmap" viewBox="0 0 ${W} ${H}" role="img" aria-label="Map of participants served by census tract">${paths}</svg>`;
+  }
+
   function render(){
-    const list = zipsForState();
-    const max = Math.max(...list.map(([,v])=>v.total), 1);
-    const stateBtns = ['GA','AL'].map(s => `<button type="button" aria-pressed="${s===state}" data-state="${s}">${s==='GA'?'Georgia':'Alabama'}</button>`).join('');
+    const list = boundariesForState();
+    const max = Math.max(...list.map(([id]) => T[id] ? T[id].total : 0), 1);
+    const stateNames = {GA:'Georgia', AL:'Alabama'};
+    const stateBtns = Object.keys(COUNTIES).map(s => `<button type="button" aria-pressed="${s===state}" data-state="${s}">${esc(stateNames[s]||s)}</button>`).join('');
     const countyChips = COUNTIES[state].map(c => `<button type="button" aria-pressed="${activeCounties.has(c)}" data-county="${esc(c)}">${esc(c)}</button>`).join('');
-    const cells = list.map(([z,v]) => `
-      <button type="button" class="zipcell" data-zip="${z}" aria-pressed="${openZip===z}" style="background:rgba(237,24,73,${shade(v.total,max).toFixed(2)});color:${shade(v.total,max)>0.5?'#fff':'#000'}">
-        <b>${z}</b><span>${fmt(v.total)} served</span>
-      </button>`).join('');
-    const zd = openZip && Z[openZip] ? `
+    const svg = buildSvg(list, max, openTract);
+    const sel = openTract && B[openTract] ? B[openTract] : null;
+    const selData = openTract && T[openTract] ? T[openTract] : null;
+    const td = sel ? `
       <div class="zip-detail">
-        <h3>Zip ${openZip} &middot; ${esc(Z[openZip].county)}</h3>
-        <p class="sub">${fmt(Z[openZip].total)} participants served, by grade level.</p>
-        ${gradeRows(Z[openZip].grades)}
+        <h3>Census Tract ${esc(sel.tract)} &middot; ${esc(sel.county)}</h3>
+        ${selData
+          ? `<p class="sub">${fmt(selData.total)} participants served, by grade level.</p>${gradeRows(selData.grades)}`
+          : `<p class="sub">No participants served in this tract during the reporting period.</p>`}
       </div>` : '';
 
     document.getElementById('p-map').innerHTML = `
       <h2>Service Map</h2>
-      <p class="sub">Participants served by zip code. Darker zip codes served more participants; lighter zip codes served fewer. Select a state, narrow by county, and choose a zip code to see its breakdown by grade level.</p>
+      <p class="sub">Participants served by census tract. Darker tracts served more participants; grey tracts had none on file. Select a state, narrow by county, and choose a tract to see its breakdown by grade level.</p>
       <div class="map-controls">
         <div class="seg" role="group" aria-label="State">${stateBtns}</div>
         <div class="chips" role="group" aria-label="County">${countyChips}</div>
       </div>
-      ${D.map.unmapped ? `<p class="map-note">${fmt(D.map.unmapped)} record${D.map.unmapped===1?'':'s'} with no Georgia or Alabama zip code on file ${D.map.unmapped===1?'is':'are'} not shown on the map.</p>` : ''}
-      ${list.length ? `<div class="zipgrid">${cells}</div>
-      <div class="legend">Fewer served <span class="swatches">${[0.16,0.3,0.44,0.58,0.72,0.88].map(o=>`<i style="background:rgba(237,24,73,${o})"></i>`).join('')}</span> More served</div>`
-      : `<p class="map-note">No zip codes on file for the selected counties.</p>`}
-      ${zd}
+      ${svg ? svg + `<div class="legend">Fewer served <span class="swatches">${[0.18,0.32,0.46,0.6,0.74,0.9].map(o=>`<i style="background:rgba(237,24,73,${o})"></i>`).join('')}</span> More served</div>`
+      : `<p class="map-note">No census tract outlines on file for the selected counties.</p>`}
+      ${td}
 
       <h2>Participants By Grade Level</h2>
       <div class="split">
@@ -440,15 +463,15 @@ document.getElementById('asof').textContent = DATA.asof;
       <div class="school-list">${D.schools.map(([s,n]) => `<div><span>${esc(s)}</span><b>${fmt(n)}</b></div>`).join('')}</div>`;
 
     document.querySelectorAll('.seg [data-state]').forEach(b => b.addEventListener('click', () => {
-      state = b.dataset.state; activeCounties = new Set(COUNTIES[state]); openZip = null; render();
+      state = b.dataset.state; activeCounties = new Set(COUNTIES[state]); openTract = null; render();
     }));
     document.querySelectorAll('.chips [data-county]').forEach(b => b.addEventListener('click', () => {
       const c = b.dataset.county;
       if (activeCounties.has(c) && activeCounties.size>1) activeCounties.delete(c); else activeCounties.add(c);
-      render();
+      openTract = null; render();
     }));
-    document.querySelectorAll('.zipcell').forEach(b => b.addEventListener('click', () => {
-      openZip = openZip===b.dataset.zip ? null : b.dataset.zip; render();
+    document.querySelectorAll('.tractmap path').forEach(p => p.addEventListener('click', () => {
+      openTract = openTract===p.dataset.tract ? null : p.dataset.tract; render();
     }));
   }
 
